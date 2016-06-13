@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>AWS API Debugger</title>
+		<link href="bootstrap.min.css" rel="stylesheet">
+	</head>
+	
+	<body>
+		<div class="container">
+			<div class="page-header">
+				<h1>AWS API Debugger <small><a href="#"><span id="setting" class="glyphicon glyphicon-lock"></span></a></small></h1>
+			</div>
+			<input type="hidden" id="access_key">
+			<input type="hidden" id="secret_key">
+			<input type="hidden" id="cn_access_key">
+			<input type="hidden" id="cn_secret_key">
+			<p>
+				<div class="form-inline">
+					<label for="region">Region</label>
+					<select class="form-control" id="region" placeholder="Region"><option></option></select>
+					<label for="service" style="margin-left: 10px;">Service</label>
+					<input type="text" class="form-control" id="service" placeholder="Service">
+					<label style="margin-left: 10px;">Method</label>
+					<div class="radio">
+						<label class="checkbox-inline">
+							<input type="radio" name="method" id="getR" value="GET" class="noPayload" checked>
+							GET
+						</label>
+						<label class="checkbox-inline">
+							<input type="radio" name="method" id="postR" value="POST" class="payload">
+							POST
+						</label>
+						<label class="checkbox-inline">
+							<input type="radio" name="method" id="putR" value="PUT" class="payload">
+							PUT
+						</label>
+						<label class="checkbox-inline">
+							<input type="radio" name="method" id="deleteR" value="DELETE" class="noPayload">
+							DELTE
+						</label>
+					</div>
+				</div>
+			</p>
+			<p>
+				<div class="row" style="margin-right: 0px; margin-left: 0px;">
+					<div class="col-xs-4" style="padding-right:5px; padding-left:0px">
+						<input class="form-control" id="endpoint" type="text" placeholder="Endpoint..." value="https://ec2.amazonaws.com">
+					</div>
+					<div class="col-xs-2" style="padding-right:5px; padding-left:0px">
+						<input class="form-control" id="uri" type="text" placeholder="URI..." value="/">
+					</div>
+					<div class="col-xs-6" style="padding-right:5px; padding-left:0px">
+						<input class="form-control" id="parameters" type="text" placeholder="Parameters..." value="Action=DescribeRegions&Version=2015-10-01">
+					</div>
+				</div>
+			</p>
+			<p>
+				<span><b>Customize Request Headers</b>  <a id="reqHeaderA" href="#"><span class="glyphicon glyphicon-new-window" aria-hidden="true"></span></a></span>
+			</p>
+			<p id="payloadP">
+				<label for="payload">AWS API Post Payload:</label>
+				<textarea class="form-control" id="payload" rows="3"></textarea>
+			</p>
+			<div id="error" class="alert alert-danger" role="alert"><button type="button" class="close"><span aria-hidden="true">&times;</span></button><strong>Error!</strong> There is some error in your inputs or AWS configures. <span class="badge"></span></div>
+			<p>
+				<button type="button" id="submit" class="btn btn-primary" data-toggle="modal" data-target="#progress">Submit</button>
+			</p>
+			<p>
+				<label for="reponse">AWS API Response: Headers  <a id="respHeaderA" href="#"><span class="glyphicon glyphicon-new-window" aria-hidden="true"></span></a></label>
+				<textarea class="form-control" id="response" rows="10" readonly></textarea>
+			</p>
+		</div>
+		
+		<div id="progress" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="Send Request now..." data-backdrop="static">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title">Send Request now...</h4>
+					</div>
+					<div class="modal-body">
+						<div class="progress">
+							<div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+								<span class="sr-only">100% Complete</span>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal fade" id="saveKey" tabindex="-1" role="dialog" aria-labelledby="saveKeyLabel" data-backdrop="static">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h4 class="modal-title" id="saveKeyLabel">Save AWS Access Key</h4>
+					</div>
+					<div class="modal-body">
+						<form>
+							<div class="form-group">
+								<label for="aws_access_key" class="control-label">Global Access Key:</label>
+								<input type="text" class="form-control" id="aws_access_key">
+							</div>
+							<div class="form-group">
+								<label for="aws_secret_key" class="control-label">Global Secret Key:</label>
+								<input type="text" class="form-control" id="aws_secret_key">
+							</div>
+							<div class="form-group">
+								<label for="aws_cn_access_key" class="control-label">China Access Key:</label>
+								<input type="text" class="form-control" id="aws_cn_access_key">
+							</div>
+							<div class="form-group">
+								<label for="aws_cn_secret_key" class="control-label">China Secret Key:</label>
+								<input type="text" class="form-control" id="aws_cn_secret_key">
+							</div>
+						</form>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+						<button type="button" class="btn btn-primary saveStore">Save</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal fade" id="responseHeaders" tabindex="-1" role="dialog" aria-labelledby="responseHeaders" data-backdrop="static">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h4 class="modal-title" id="resLabel">AWS API Response Headers</h4>
+					</div>
+					<div class="modal-body">
+					<ul id="respHeaderList" class="list-group"></ul>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal fade" id="reqestHeaders" tabindex="-1" role="dialog" aria-labelledby="reqestHeaders" data-backdrop="static">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title" id="reqLabel">AWS API Reqest Headers</h4>
+				</div>
+				<div class="modal-body">
+					<table class="table table-striped" id="reqHeadersT">
+						
+						<thead> <tr> <th>#</th><th>Key</th> <th>Value</th> </tr> </thead>
+						<tbody><tr><th scope="row" style="vertical-align: middle;">1</th><td><input type="text" class="form-control header-key" placeholder="Key..." value="Content-Type"></td><td><input type="text" class="form-control header-value" placeholder="Value..." value="text/plain"></td></tr></tbody>
+					</table>
+					<a href="#" id="header-add"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a>
+					<a href="#" id="header-del"><span class="glyphicon glyphicon-minus" aria-hidden="true"></span></a>
+					
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">OK</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript" src="jquery-2.2.4.min.js"></script>
+	<script type="text/javascript" src="bootstrap.min.js"></script>
+	<script type="text/javascript" src="2.5.3-crypto-sha256-hmac.js"></script>
+	<script type="text/javascript" src="window.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+
+  "name": "Chrome AWS API Debugger",
+  "description": "This APP is for AWS API debug",
+  "version": "0.1.0",
+  "app": {
+    "background": {
+      "scripts": ["background.js"]
+    }
+  },
+  "permissions": [
+    "http://*/", "https://*/", "storage"
+  ],
+  "icons": {
+    "16": "AWScloud-16.png",
+    "128": "AWScloud-128.png"
+  }
+}
