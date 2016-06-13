@@ -4,4 +4,4 @@ Not everyone use AWS SDK to use AWS APIs, and when you want to directly interact
 
 Version 0.1.0: Init Version
 
-Source code please visit: https://github.com/zorrofox/chrome-aws-api-debugger
+Chrome plugin: https://chrome.google.com/webstore/detail/chrome-aws-api-debugger/mohdimfdnhinneooofaoiklhaeebkbgb
