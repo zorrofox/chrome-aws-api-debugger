@@ -196,6 +196,25 @@ function setOutput(xhr, data, err) {
 			if (typeof data === 'string')
 				data = JSON.parse(data);
 			$('#response').val(JSON.stringify(data, null, 4));
+		} else {
+			chrome.fileSystem.chooseEntry({
+				type: 'saveFile',
+				suggestedName: 'reponse.data',
+				acceptsAllTypes: true
+			}, function(writableFileEntry) {
+				writableFileEntry.createWriter(function(writer) {
+					var truncated = false;
+					writer.onwriteend = function(e) {
+						$('#response').val('Download complete!');
+					};
+					writer.onerror = function(e) {
+						console.log('Export failed: ' + e.toString());
+					};
+					writer.write(new Blob([data], {
+						type: contentType
+					}));
+				});
+			});
 		}
 	} else {
 		$('#response').val(data);
