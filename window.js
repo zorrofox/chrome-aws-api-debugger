@@ -4,9 +4,8 @@ $(function() {
 	$('#error').hide();
 
 
-	$('#region').html(loadRegion);
-	$('#region').val('us-east-1');
-	$('#service').val('ec2');
+	//$('#region').html(loadRegion);
+	loadRegion();
 
 
 	$('input.payload').click(function() {
@@ -78,10 +77,90 @@ function parseUrl(url) {
 
 
 function loadRegion() {
-	return '<option>eu-west-1</option>' + '<option>ap-southeast-1</option>' + '<option>ap-southeast-2</option>' +
-		'<option>eu-central-1</option>' + '<option>ap-northeast-2</option>' + '<option>ap-northeast-1</option>' +
-		'<option>us-east-1</option>' + '<option>sa-east-1</option>' + '<option>us-west-1</option>' + '<option>us-west-2</option>' +
-		'<option>cn-north-1</option>'
+
+	$.ajax({
+		method: 'GET',
+		url: 'http://docs.aws.amazon.com/general/latest/gr/rande.html',
+		success: function(data, status, xhr) {
+
+			var regionList = '';
+			var serviceList = '';
+
+			var listJ = $(data).find('div.table>div.table-contents>table>tbody');
+			for (var i = 0; i < listJ.length; i++) {
+				var trList = $(listJ[i]).find('tr');
+				for (var j = 0; j < trList.length; j++) {
+					var tdList = $(trList[j]).find('td');
+					var endpoint = {};
+
+					var region = $(tdList[1]).text().replace(/[^a-zA-Z0-9\.:\/-]/g, '');
+					var urlStr = $(tdList[2]).text();
+					var url = urlStr.replace(/[^a-zA-Z0-9\.:\/-]/g, '');
+
+					// Many logics need to process the endpoint pages
+
+					if (region && url && url.indexOf('queue') < 0 && region.indexOf('quicksight') < 0 && region.indexOf('s3-website') < 0 && region.indexOf('mturk') < 0 && region.indexOf('HTTPS') < 0 && region.indexOf('MQTT') < 0 && region.indexOf('MQTToverWebSocket') < 0 && url.indexOf('.') > 0) {
+						if (regionList.indexOf(region) < 0)
+							regionList = regionList + '<option value="' + region + '">' + region + '</option>';
+						if (url.indexOf('Validendpoint') >= 0) {
+
+							var beginPos = urlStr.indexOf('s3.');
+							var url = urlStr.slice(beginPos).split('\n')[0];
+						} else if (url.indexOf('kms.') == 0) {
+							url = urlStr.split('\n')[2].replace(/[^a-zA-Z0-9\.:\/-]/g, '');
+						}
+						if (serviceList.indexOf(url) < 0)
+							serviceList = serviceList + '<option data-parent="' + region + '" value="' + url + '">' + url.split('.')[0] + '</option>';
+
+					}
+				}
+
+			}
+
+
+
+			$('#region').html(regionList);
+			$('#service').html(serviceList);
+
+			let childOptions = $('#service').find("option");
+			$('#region').change(cascadeSelect);
+
+			function cascadeSelect(event) {
+				let index = event.target["selectedIndex"];
+				let item = event.target[index].value;
+				let options = Array.from(childOptions).filter(function(option) {
+					return option.value == "" || option.dataset.parent == item
+				});
+				$('#service').empty().append(options);
+				//$('#service').find("option[value='']").prop("selected", true);
+				$('#service').find("option[value*='ec2']").prop("selected", true);
+				$("#service").change();
+
+			}
+
+			$("#service").change(serviceChange);
+
+			function serviceChange(event) {
+
+				let index = event.target["selectedIndex"];
+				let item = event.target[index].value;
+				$('#endpoint').val('https://' + item);
+
+			}
+
+			$('#region').find("option[value='us-east-1']").prop("selected", true);
+			$('#region').change();
+
+			$("#service").change();
+
+
+		},
+		error: function(xhr) {
+			console.log('error!');
+			console.log(xhr);
+
+		}
+	});
 
 }
 
@@ -89,14 +168,14 @@ function submit() {
 	$('#response').val('');
 
 	var region = $('#region').val();
-	var access_key = (region === 'cn-north-1') ? $('#cn_access_key').val() : $('#access_key').val();
-	var secret_key = (region === 'cn-north-1') ? $('#cn_secret_key').val() : $('#secret_key').val();
+	var access_key = (region === 'cn-north-1' || region === 'cn-northwest-1') ? $('#cn_access_key').val() : $('#access_key').val();
+	var secret_key = (region === 'cn-north-1' || region === 'cn-northwest-1') ? $('#cn_secret_key').val() : $('#secret_key').val();
 	var timeStamp = new Date();
 	var datestamp = getDateString(timeStamp);
 	var amzdate = getTimeString(timeStamp);
 
 	var method = $("input:radio[name=method]:checked").val();
-	var service = $('#service').val();
+	var service = $('#service option:selected').text();
 	var host = parseUrl($('#endpoint').val()).hostname;
 
 
@@ -106,7 +185,7 @@ function submit() {
 	var canonical_uri = $('#uri').val();
 	var payload_hash = Crypto.SHA256(payload);
 	var canonical_querystring = request_parameters;
-	var signed_headers = 'host;x-amz-date';
+	var a_signed_headers = ['host', 'x-amz-date'];
 
 	var headerKeyList = $('#reqHeadersT>tbody>tr>td>input.header-key');
 	var headerValList = $('#reqHeadersT>tbody>tr>td>input.header-value');
@@ -115,24 +194,27 @@ function submit() {
 		var key = $(headerKeyList[i]).val();
 		var val = $(headerValList[i]).val();
 		if (key && val && key !== '' && val !== '') {
-			headers[key] = val;
-			if (key.toLowerCase() !== 'content-type')
-				signed_headers = signed_headers + ';' + key;
+			headers[key.toLowerCase()] = val;
+			a_signed_headers.push(key.toLowerCase());
+
 		}
 
 	}
 
-	var oStr = '';
-	for (var a in headers) {
-		if (a.toLowerCase() !== 'content-type')
-			oStr = oStr + a + ':' + headers[a] + '\n';
-	}
-	var canonical_headers = 'host:' + host + '\n' + 'x-amz-date:' + amzdate + '\n' + oStr;
+	var signed_headers = a_signed_headers.sort().toString().replace(/,/g, ';');
 
-	//console.log(canonical_headers);
-	//console.log(signed_headers);
+	var canonical_headers = '';
+	headers['host'] = host;
+	headers['x-amz-date'] = amzdate;
+	var headerList = Object.keys(headers).sort();
+
+	for (var a in headerList) {
+		canonical_headers = canonical_headers + headerList[a] + ':' + headers[headerList[a]] + '\n';
+	}
 
 	var canonical_request = method + '\n' + canonical_uri + '\n' + canonical_querystring + '\n' + canonical_headers + '\n' + signed_headers + '\n' + payload_hash;
+
+	//console.log(canonical_request);
 	var algorithm = 'AWS4-HMAC-SHA256';
 	var credential_scope = datestamp + '/' + region + '/' + service + '/' + 'aws4_request';
 	var string_to_sign = algorithm + '\n' + amzdate + '\n' + credential_scope + '\n' + Crypto.SHA256(canonical_request);
@@ -143,10 +225,12 @@ function submit() {
 
 	var authorization_header = algorithm + ' ' + 'Credential=' + access_key + '/' + credential_scope + ', ' + 'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + signature;
 
-	headers['x-amz-date'] = amzdate;
+	// Chrome & JQuery Ajax function not allowed modify the host header and add it auto
+	delete headers.host;
+
 	headers['Authorization'] = authorization_header;
 	headers['x-amz-content-sha256'] = payload_hash;
-	//headers['Content-Type'] = 'text/plain';
+
 
 	var request_url = endpoint + canonical_uri + ((canonical_querystring === '') ? '' : '?') + canonical_querystring;
 

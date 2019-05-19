@@ -3,7 +3,7 @@
 
   "name": "Chrome AWS API Debugger",
   "description": "This APP is for AWS API debug",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "app": {
     "background": {
       "scripts": ["background.js"]
