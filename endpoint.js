@@ -5,7 +5,7 @@ $.ajax({
 		var endpointList = [];
 		var regionList = [];
 
-		var listJ = $(data).find('div.table>div.table-contents>table>tbody');
+		var listJ = $(data).find('div.table-contents>table>tbody');
 		for (var i = 0; i < listJ.length; i++) {
 			var trList = $(listJ[i]).find('tr');
 			for (var j = 0; j < trList.length; j++) {

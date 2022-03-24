@@ -4,8 +4,6 @@ $(function() {
 	$('#error').hide();
 
 
-	//$('#region').html(loadRegion);
-	loadRegion();
 
 
 	$('input.payload').click(function() {
@@ -76,110 +74,32 @@ function parseUrl(url) {
 }
 
 
-function loadRegion() {
-
-	$.ajax({
-		method: 'GET',
-		url: 'http://docs.aws.amazon.com/general/latest/gr/rande.html',
-		success: function(data, status, xhr) {
-
-			var regionList = '';
-			var serviceList = '';
-
-			var listJ = $(data).find('div.table>div.table-contents>table>tbody');
-			for (var i = 0; i < listJ.length; i++) {
-				var trList = $(listJ[i]).find('tr');
-				for (var j = 0; j < trList.length; j++) {
-					var tdList = $(trList[j]).find('td');
-					var endpoint = {};
-
-					var region = $(tdList[1]).text().replace(/[^a-zA-Z0-9\.:\/-]/g, '');
-					var urlStr = $(tdList[2]).text();
-					var url = urlStr.replace(/[^a-zA-Z0-9\.:\/-]/g, '');
-
-					// Many logics need to process the endpoint pages
-
-					if (region && url && url.indexOf('queue') < 0 && region.indexOf('quicksight') < 0 && region.indexOf('s3-website') < 0 && region.indexOf('mturk') < 0 && region.indexOf('HTTPS') < 0 && region.indexOf('MQTT') < 0 && region.indexOf('MQTToverWebSocket') < 0 && url.indexOf('.') > 0) {
-						if (regionList.indexOf(region) < 0)
-							regionList = regionList + '<option value="' + region + '">' + region + '</option>';
-						if (url.indexOf('Validendpoint') >= 0) {
-
-							var beginPos = urlStr.indexOf('s3.');
-							var url = urlStr.slice(beginPos).split('\n')[0];
-						} else if (url.indexOf('kms.') == 0) {
-							url = urlStr.split('\n')[2].replace(/[^a-zA-Z0-9\.:\/-]/g, '');
-						}
-						if (serviceList.indexOf(url) < 0)
-							serviceList = serviceList + '<option data-parent="' + region + '" value="' + url + '">' + url.split('.')[0] + '</option>';
-
-					}
-				}
-
-			}
-
-
-
-			$('#region').html(regionList);
-			$('#service').html(serviceList);
-
-			let childOptions = $('#service').find("option");
-			$('#region').change(cascadeSelect);
-
-			function cascadeSelect(event) {
-				let index = event.target["selectedIndex"];
-				let item = event.target[index].value;
-				let options = Array.from(childOptions).filter(function(option) {
-					return option.value == "" || option.dataset.parent == item
-				});
-				$('#service').empty().append(options);
-				//$('#service').find("option[value='']").prop("selected", true);
-				$('#service').find("option[value*='ec2']").prop("selected", true);
-				$("#service").change();
-
-			}
-
-			$("#service").change(serviceChange);
-
-			function serviceChange(event) {
-
-				let index = event.target["selectedIndex"];
-				let item = event.target[index].value;
-				$('#endpoint').val('https://' + item);
-
-			}
-
-			$('#region').find("option[value='us-east-1']").prop("selected", true);
-			$('#region').change();
-
-			$("#service").change();
-
-
-		},
-		error: function(xhr) {
-			console.log('error!');
-			console.log(xhr);
-
-		}
-	});
-
-}
 
 function submit() {
 	$('#response').val('');
 
-	var region = $('#region').val();
-	var access_key = (region === 'cn-north-1' || region === 'cn-northwest-1') ? $('#cn_access_key').val() : $('#access_key').val();
-	var secret_key = (region === 'cn-north-1' || region === 'cn-northwest-1') ? $('#cn_secret_key').val() : $('#secret_key').val();
+	var endpoint = $('#endpoint').val();
+    var url_list = endpoint.split('.')
+
+	var region = url_list[1];
+	var service = url_list[0].replace("https://", "");
+	if (region === 'amazonaws') {
+		region = 'us-east-1'
+	}
+	var schema = url_list[url_list.length-1]
+	var access_key = (schema==='cn') ? $('#cn_access_key').val() : $('#access_key').val();
+	var secret_key = (schema==='cn') ? $('#cn_secret_key').val() : $('#secret_key').val();
+
 	var timeStamp = new Date();
 	var datestamp = getDateString(timeStamp);
 	var amzdate = getTimeString(timeStamp);
 
 	var method = $("input:radio[name=method]:checked").val();
-	var service = $('#service option:selected').text();
+	
 	var host = parseUrl($('#endpoint').val()).hostname;
 
 
-	var endpoint = $('#endpoint').val();
+	
 	var request_parameters = $('#parameters').val();
 	var payload = $('#payload').val();
 	var canonical_uri = $('#uri').val();
